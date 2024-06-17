@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:http/http.dart' as http;
 import 'dart:async';
+import 'package:machine_monitory/data/database_helper.dart';
 
 class DataPage extends StatefulWidget {
   const DataPage({super.key});
@@ -38,10 +39,10 @@ class _DataPageState extends State<DataPage> {
 
   Future<void> fetchDataFromBlynk() async {
     try {
-      final tempUrl = Uri.https(
-          'blynk.cloud', '/external/api/get', {'token': blynkAuthToken, 'pin': 'V1'});
-      final pressureUrl = Uri.https(
-          'blynk.cloud', '/external/api/get', {'token': blynkAuthToken, 'pin': 'V2'});
+      final tempUrl = Uri.https('blynk.cloud', '/external/api/get',
+          {'token': blynkAuthToken, 'pin': 'V1'});
+      final pressureUrl = Uri.https('blynk.cloud', '/external/api/get',
+          {'token': blynkAuthToken, 'pin': 'V2'});
 
       var tempResponse = await http.get(tempUrl);
       var pressureResponse = await http.get(pressureUrl);
@@ -49,14 +50,23 @@ class _DataPageState extends State<DataPage> {
       print('Temperature status code: ${tempResponse.statusCode}');
       print('Pressure status code: ${pressureResponse.statusCode}');
 
-      if (tempResponse.statusCode == 200 && pressureResponse.statusCode == 200) {
+      if (tempResponse.statusCode == 200 &&
+          pressureResponse.statusCode == 200) {
+        double tempValue = double.parse(tempResponse.body);
+        double pressureValue = double.parse(pressureResponse.body);
         setState(() {
           temperature = tempResponse.body;
           pressure = pressureResponse.body;
-          temperatureData.add(double.parse(tempResponse.body));
-          pressureData.add(double.parse(pressureResponse.body));
+
+          temperatureData.add(tempValue);
+          pressureData.add(pressureValue);
         });
-      } else if (tempResponse.statusCode == 400 || pressureResponse.statusCode == 400) {
+
+        await DatabaseHelper().insertData('temperature', tempValue);
+        await DatabaseHelper().insertData('pressure', pressureValue);
+
+      } else if (tempResponse.statusCode == 400 ||
+          pressureResponse.statusCode == 400) {
         setState(() {
           temperature = 'No data available';
           pressure = 'No data available';
@@ -78,6 +88,12 @@ class _DataPageState extends State<DataPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Machine Status'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            onPressed: () => Navigator.pushNamed(context, '/history'),
+          )
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -129,7 +145,7 @@ class _DataPageState extends State<DataPage> {
                       }).toList(),
                       isCurved: true,
                       barWidth: 2,
-                      color:Colors.red,
+                      color: Colors.red,
                       dotData: const FlDotData(show: false),
                     ),
                   ],

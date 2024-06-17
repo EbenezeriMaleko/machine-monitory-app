@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:machine_monitory/Pages/data_page.dart';
+import 'package:machine_monitory/Pages/history_page.dart';
 import 'package:machine_monitory/Pages/home_page.dart';
 
 void main() {
@@ -17,6 +18,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => const HomePage(),
         '/data': (context) => const DataPage(),
+        '/history':(context) => const HistoryPage(),
       },
     );
   }
