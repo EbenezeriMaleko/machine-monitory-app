@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:machine_monitory/data/database_helper.dart';
+import 'package:intl/intl.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -19,13 +20,22 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   Future<void> loadData() async {
-    List<Map<String, dynamic>> tempData = await DatabaseHelper().fetchData('temperature');
-    List<Map<String, dynamic>> pressData = await DatabaseHelper().fetchData('pressure');
+    List<Map<String, dynamic>> tempData =
+        await DatabaseHelper().fetchData('temperature');
+    List<Map<String, dynamic>> pressData =
+        await DatabaseHelper().fetchData('pressure');
 
     setState(() {
       temperatureData = tempData;
       pressureData = pressData;
     });
+  }
+
+  String formatTimestamp(String timestamp) {
+    DateTime utcTime = DateTime.parse(timestamp);
+    DateTime localTime = utcTime.add(const Duration(hours: 3));
+    var formatter = DateFormat('yyyy-MM-dd HH:mm:ss');
+    return formatter.format(localTime);
   }
 
   @override
@@ -46,7 +56,8 @@ class _HistoryPageState extends State<HistoryPage> {
                 itemBuilder: (context, index) {
                   return ListTile(
                     title: Text('${temperatureData[index]['value']} °C'),
-                    subtitle: Text(temperatureData[index]['timestamp']),
+                    subtitle: Text(
+                        formatTimestamp(temperatureData[index]['timestamp'])),
                   );
                 },
               ),
@@ -59,7 +70,8 @@ class _HistoryPageState extends State<HistoryPage> {
                 itemBuilder: (context, index) {
                   return ListTile(
                     title: Text('${pressureData[index]['value']} Pa'),
-                    subtitle: Text(pressureData[index]['timestamp']),
+                    subtitle:
+                        Text(formatTimestamp(pressureData[index]['timestamp'])),
                   );
                 },
               ),
