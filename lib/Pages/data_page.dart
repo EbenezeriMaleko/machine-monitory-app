@@ -23,35 +23,25 @@ class _DataPageState extends State<DataPage> {
   @override
   void initState() {
     super.initState();
-    // Fetch data initially
     fetchDataFromBlynk();
-    // Set up a timer to fetch data periodically
-    timer = Timer.periodic(
-        const Duration(seconds: 5), (Timer t) => fetchDataFromBlynk());
+    timer = Timer.periodic(const Duration(seconds: 5), (Timer t) => fetchDataFromBlynk());
   }
 
   @override
   void dispose() {
-    // Cancel the timer when the widget is disposed
     timer?.cancel();
     super.dispose();
   }
 
   Future<void> fetchDataFromBlynk() async {
     try {
-      final tempUrl = Uri.https('blynk.cloud', '/external/api/get',
-          {'token': blynkAuthToken, 'pin': 'V1'});
-      final pressureUrl = Uri.https('blynk.cloud', '/external/api/get',
-          {'token': blynkAuthToken, 'pin': 'V2'});
+      final tempUrl = Uri.https('blynk.cloud', '/external/api/get', {'token': blynkAuthToken, 'pin': 'V1'});
+      final pressureUrl = Uri.https('blynk.cloud', '/external/api/get', {'token': blynkAuthToken, 'pin': 'V2'});
 
       var tempResponse = await http.get(tempUrl);
       var pressureResponse = await http.get(pressureUrl);
 
-      print('Temperature status code: ${tempResponse.statusCode}');
-      print('Pressure status code: ${pressureResponse.statusCode}');
-
-      if (tempResponse.statusCode == 200 &&
-          pressureResponse.statusCode == 200) {
+      if (tempResponse.statusCode == 200 && pressureResponse.statusCode == 200) {
         double tempValue = double.parse(tempResponse.body);
         double pressureValue = double.parse(pressureResponse.body);
         setState(() {
@@ -64,23 +54,19 @@ class _DataPageState extends State<DataPage> {
 
         await DatabaseHelper().insertData('temperature', tempValue);
         await DatabaseHelper().insertData('pressure', pressureValue);
-
-      } else if (tempResponse.statusCode == 400 ||
-          pressureResponse.statusCode == 400) {
-        setState(() {
-          temperature = 'No data available';
-          pressure = 'No data available';
-        });
       } else {
-        throw Exception('Failed to load data from Blynk');
+        handleDataError();
       }
     } catch (e) {
-      print('Error: $e');
-      setState(() {
-        temperature = 'Error';
-        pressure = 'Error';
-      });
+      handleDataError();
     }
+  }
+
+  void handleDataError() {
+    setState(() {
+      temperature = 'Error';
+      pressure = 'Error';
+    });
   }
 
   @override
@@ -100,19 +86,9 @@ class _DataPageState extends State<DataPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            DataCard(
-              label: 'Temperature',
-              value: temperature,
-              unit: '°C',
-              icon: Icons.thermostat,
-            ),
+            DataCard(label: 'Temperature', value: temperature, unit: '°C', icon: Icons.thermostat),
             const SizedBox(height: 20),
-            DataCard(
-              label: 'Pressure',
-              value: pressure,
-              unit: 'Pa',
-              icon: Icons.speed,
-            ),
+            DataCard(label: 'Pressure', value: pressure, unit: 'Pa', icon: Icons.speed),
             const SizedBox(height: 20),
             const Text('Temperature Graph', style: TextStyle(fontSize: 20)),
             const SizedBox(height: 10),
@@ -132,12 +108,8 @@ class _DataPageState extends State<DataPage> {
                   ),
                   minX: 0,
                   maxX: temperatureData.length.toDouble() - 1,
-                  minY: temperatureData.isNotEmpty
-                      ? temperatureData.reduce((a, b) => a < b ? a : b) - 5
-                      : 0,
-                  maxY: temperatureData.isNotEmpty
-                      ? temperatureData.reduce((a, b) => a > b ? a : b) + 5
-                      : 0,
+                  minY: temperatureData.isNotEmpty ? temperatureData.reduce((a, b) => a < b ? a : b) - 5 : 0,
+                  maxY: temperatureData.isNotEmpty ? temperatureData.reduce((a, b) => a > b ? a : b) + 5 : 0,
                   lineBarsData: [
                     LineChartBarData(
                       spots: temperatureData.asMap().entries.map((e) {
@@ -171,12 +143,8 @@ class _DataPageState extends State<DataPage> {
                   ),
                   minX: 0,
                   maxX: pressureData.length.toDouble() - 1,
-                  minY: pressureData.isNotEmpty
-                      ? pressureData.reduce((a, b) => a < b ? a : b) - 5
-                      : 0,
-                  maxY: pressureData.isNotEmpty
-                      ? pressureData.reduce((a, b) => a > b ? a : b) + 5
-                      : 0,
+                  minY: pressureData.isNotEmpty ? pressureData.reduce((a, b) => a < b ? a : b) - 5 : 0,
+                  maxY: pressureData.isNotEmpty ? pressureData.reduce((a, b) => a > b ? a : b) + 5 : 0,
                   lineBarsData: [
                     LineChartBarData(
                       spots: pressureData.asMap().entries.map((e) {
@@ -215,9 +183,7 @@ class DataCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10.0),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
       elevation: 5,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -230,17 +196,12 @@ class DataCard extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 10),
                 Text(
                   '$value $unit',
-                  style: const TextStyle(
-                    fontSize: 24,
-                  ),
+                  style: const TextStyle(fontSize: 24),
                 ),
               ],
             ),

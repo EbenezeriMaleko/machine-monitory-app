@@ -1,7 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:machine_monitory/data/database_helper.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:machine_monitory/data/database_helper.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -26,15 +27,16 @@ class _HistoryPageState extends State<HistoryPage> {
     List<Map<String, dynamic>> pressData =
         await DatabaseHelper().fetchData('pressure');
 
+    if (!mounted) return;
+    
     setState(() {
       temperatureData = tempData;
       pressureData = pressData;
     });
   }
 
-  String formatTimestamp(String timestamp) {
-    DateTime utcTime = DateTime.parse(timestamp);
-    DateTime localTime = utcTime.add(const Duration(hours: 3));
+  String formatTimestamp(DateTime timestamp) {
+    DateTime localTime = timestamp;
     var formatter = DateFormat('yyyy-MM-dd HH:mm:ss');
     return formatter.format(localTime);
   }
@@ -43,15 +45,11 @@ class _HistoryPageState extends State<HistoryPage> {
     Map<String, double> latestValues = {};
 
     for (var record in data) {
-      DateTime date = DateTime.parse(record['timestamp']).toLocal();
+      DateTime date = record['timestamp'];
       String dateString = DateFormat('yyyy-MM-dd').format(date);
       double value = record['value'];
 
-      if (!latestValues.containsKey(dateString)) {
-        latestValues[dateString] = value;
-      } else {
-        latestValues[dateString] = value;
-      }
+      latestValues[dateString] = value;
     }
 
     return latestValues;
@@ -59,10 +57,12 @@ class _HistoryPageState extends State<HistoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    Map<String, double> latestTempValues = getLatestValuesPerDay(temperatureData);
+    Map<String, double> latestTempValues =
+        getLatestValuesPerDay(temperatureData);
     Map<String, double> latestPressValues = getLatestValuesPerDay(pressureData);
 
-    List<BarChartGroupData> temperatureBarGroups = latestTempValues.entries.map((entry) {
+    List<BarChartGroupData> temperatureBarGroups =
+        latestTempValues.entries.map((entry) {
       return BarChartGroupData(
         x: DateTime.parse(entry.key).millisecondsSinceEpoch,
         barRods: [
@@ -76,7 +76,8 @@ class _HistoryPageState extends State<HistoryPage> {
       );
     }).toList();
 
-    List<BarChartGroupData> pressureBarGroups = latestPressValues.entries.map((entry) {
+    List<BarChartGroupData> pressureBarGroups =
+        latestPressValues.entries.map((entry) {
       return BarChartGroupData(
         x: DateTime.parse(entry.key).millisecondsSinceEpoch,
         barRods: [
@@ -109,14 +110,16 @@ class _HistoryPageState extends State<HistoryPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Temperature Data', style: TextStyle(fontSize: 20)),
+                  const Text('Temperature Data',
+                      style: TextStyle(fontSize: 20)),
                   Expanded(
                     child: ListView.builder(
                       itemCount: temperatureData.length,
                       itemBuilder: (context, index) {
                         return ListTile(
                           title: Text('${temperatureData[index]['value']} °C'),
-                          subtitle: Text(formatTimestamp(temperatureData[index]['timestamp'])),
+                          subtitle: Text(formatTimestamp(
+                              temperatureData[index]['timestamp'])),
                         );
                       },
                     ),
@@ -129,7 +132,8 @@ class _HistoryPageState extends State<HistoryPage> {
                       itemBuilder: (context, index) {
                         return ListTile(
                           title: Text('${pressureData[index]['value']} Pa'),
-                          subtitle: Text(formatTimestamp(pressureData[index]['timestamp'])),
+                          subtitle: Text(formatTimestamp(
+                              pressureData[index]['timestamp'])),
                         );
                       },
                     ),
@@ -142,7 +146,8 @@ class _HistoryPageState extends State<HistoryPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Temperature Data', style: TextStyle(fontSize: 20)),
+                  const Text('Temperature Data',
+                      style: TextStyle(fontSize: 20)),
                   Expanded(
                     child: BarChart(
                       BarChartData(
@@ -151,12 +156,15 @@ class _HistoryPageState extends State<HistoryPage> {
                         alignment: BarChartAlignment.spaceAround,
                         barGroups: temperatureBarGroups,
                         titlesData: FlTitlesData(
-                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          topTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false)),
                           bottomTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
                               getTitlesWidget: (double value, TitleMeta meta) {
-                                String date = DateFormat('MM-dd').format(DateTime.fromMillisecondsSinceEpoch(value.toInt()));
+                                String date = DateFormat('MM-dd').format(
+                                    DateTime.fromMillisecondsSinceEpoch(
+                                        value.toInt()));
                                 return SideTitleWidget(
                                   axisSide: meta.axisSide,
                                   child: Text(date),
@@ -178,12 +186,15 @@ class _HistoryPageState extends State<HistoryPage> {
                         alignment: BarChartAlignment.spaceAround,
                         barGroups: pressureBarGroups,
                         titlesData: FlTitlesData(
-                          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          topTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false)),
                           bottomTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
                               getTitlesWidget: (double value, TitleMeta meta) {
-                                String date = DateFormat('MM-dd').format(DateTime.fromMillisecondsSinceEpoch(value.toInt()));
+                                String date = DateFormat('MM-dd').format(
+                                    DateTime.fromMillisecondsSinceEpoch(
+                                        value.toInt()));
                                 return SideTitleWidget(
                                   axisSide: meta.axisSide,
                                   child: Text(date),
@@ -204,5 +215,3 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 }
-
-

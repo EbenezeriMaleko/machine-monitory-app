@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "594061634848",
+    "project_id": "machine-monitory",
+    "storage_bucket": "machine-monitory.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:594061634848:android:1c6e77cec9d0cd578efb45",
+        "android_client_info": {
+          "package_name": "com.example.machine_monitory"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCPCDrAXuAdAzjeUsWVwMaV7GtkiJfBKUI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
