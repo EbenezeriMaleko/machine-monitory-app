@@ -13,6 +13,7 @@ class HistoryPage extends StatefulWidget {
 class _HistoryPageState extends State<HistoryPage> {
   List<Map<String, dynamic>> temperatureData = [];
   List<Map<String, dynamic>> pressureData = [];
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -21,6 +22,10 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   Future<void> loadData() async {
+    setState(() {
+      isLoading = true;
+    });
+
     List<Map<String, dynamic>> tempData =
         await DatabaseHelper().fetchData('temperature');
     List<Map<String, dynamic>> pressData =
@@ -31,6 +36,7 @@ class _HistoryPageState extends State<HistoryPage> {
     setState(() {
       temperatureData = tempData;
       pressureData = pressData;
+      isLoading = false;
     });
   }
 
@@ -102,115 +108,118 @@ class _HistoryPageState extends State<HistoryPage> {
             ],
           ),
         ),
-        body: TabBarView(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        body: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : TabBarView(
                 children: [
-                  const Text('Temperature Data',
-                      style: TextStyle(fontSize: 20)),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: temperatureData.length,
-                      itemBuilder: (context, index) {
-                        return ListTile(
-                          title: Text('${temperatureData[index]['value']} °C'),
-                          subtitle: Text(formatTimestamp(
-                              temperatureData[index]['timestamp'])),
-                        );
-                      },
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Temperature Data',
+                            style: TextStyle(fontSize: 20)),
+                        Expanded(
+                          child: ListView.builder(
+                            itemCount: temperatureData.length,
+                            itemBuilder: (context, index) {
+                              return ListTile(
+                                title: Text('${temperatureData[index]['value']} °C'),
+                                subtitle: Text(formatTimestamp(
+                                    temperatureData[index]['timestamp'])),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        const Text('Pressure Data', style: TextStyle(fontSize: 20)),
+                        Expanded(
+                          child: ListView.builder(
+                            itemCount: pressureData.length,
+                            itemBuilder: (context, index) {
+                              return ListTile(
+                                title: Text('${pressureData[index]['value']} Pa'),
+                                subtitle: Text(formatTimestamp(
+                                    pressureData[index]['timestamp'])),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  const Text('Pressure Data', style: TextStyle(fontSize: 20)),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: pressureData.length,
-                      itemBuilder: (context, index) {
-                        return ListTile(
-                          title: Text('${pressureData[index]['value']} Pa'),
-                          subtitle: Text(formatTimestamp(
-                              pressureData[index]['timestamp'])),
-                        );
-                      },
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Temperature Data',
+                            style: TextStyle(fontSize: 20)),
+                        Expanded(
+                          child: BarChart(
+                            BarChartData(
+                              minY: 0,
+                              maxY: 300,
+                              alignment: BarChartAlignment.spaceAround,
+                              barGroups: temperatureBarGroups,
+                              titlesData: FlTitlesData(
+                                topTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false)),
+                                bottomTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    getTitlesWidget: (double value, TitleMeta meta) {
+                                      String date = DateFormat('MM-dd').format(
+                                          DateTime.fromMillisecondsSinceEpoch(
+                                              value.toInt()));
+                                      return SideTitleWidget(
+                                        axisSide: meta.axisSide,
+                                        child: Text(date),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        const Text('Pressure Data', style: TextStyle(fontSize: 20)),
+                        Expanded(
+                          child: BarChart(
+                            BarChartData(
+                              minY: 0,
+                              maxY: 1000,
+                              alignment: BarChartAlignment.spaceAround,
+                              barGroups: pressureBarGroups,
+                              titlesData: FlTitlesData(
+                                topTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false)),
+                                bottomTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    getTitlesWidget: (double value, TitleMeta meta) {
+                                      String date = DateFormat('MM-dd').format(
+                                          DateTime.fromMillisecondsSinceEpoch(
+                                              value.toInt()));
+                                      return SideTitleWidget(
+                                        axisSide: meta.axisSide,
+                                        child: Text(date),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Temperature Data',
-                      style: TextStyle(fontSize: 20)),
-                  Expanded(
-                    child: BarChart(
-                      BarChartData(
-                        minY: 0,
-                        maxY: 300,
-                        alignment: BarChartAlignment.spaceAround,
-                        barGroups: temperatureBarGroups,
-                        titlesData: FlTitlesData(
-                          topTitles: const AxisTitles(
-                              sideTitles: SideTitles(showTitles: false)),
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              getTitlesWidget: (double value, TitleMeta meta) {
-                                String date = DateFormat('MM-dd').format(
-                                    DateTime.fromMillisecondsSinceEpoch(
-                                        value.toInt()));
-                                return SideTitleWidget(
-                                  axisSide: meta.axisSide,
-                                  child: Text(date),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text('Pressure Data', style: TextStyle(fontSize: 20)),
-                  Expanded(
-                    child: BarChart(
-                      BarChartData(
-                        minY: 0,
-                        maxY: 1000,
-                        alignment: BarChartAlignment.spaceAround,
-                        barGroups: pressureBarGroups,
-                        titlesData: FlTitlesData(
-                          topTitles: const AxisTitles(
-                              sideTitles: SideTitles(showTitles: false)),
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              getTitlesWidget: (double value, TitleMeta meta) {
-                                String date = DateFormat('MM-dd').format(
-                                    DateTime.fromMillisecondsSinceEpoch(
-                                        value.toInt()));
-                                return SideTitleWidget(
-                                  axisSide: meta.axisSide,
-                                  child: Text(date),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
 }
+
