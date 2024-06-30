@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -14,6 +15,11 @@ class _HistoryPageState extends State<HistoryPage> {
   List<Map<String, dynamic>> temperatureData = [];
   List<Map<String, dynamic>> pressureData = [];
   bool isLoading = true;
+  bool hasMoreTemperatureData = true;
+  bool hasMorePressureData = true;
+  DocumentSnapshot? lastTemperatureDocument;
+  DocumentSnapshot? lastPressureDocument;
+  final int documentLimit = 10;
 
   @override
   void initState() {
@@ -26,18 +32,66 @@ class _HistoryPageState extends State<HistoryPage> {
       isLoading = true;
     });
 
-    List<Map<String, dynamic>> tempData =
-        await DatabaseHelper().fetchData('temperature');
-    List<Map<String, dynamic>> pressData =
-        await DatabaseHelper().fetchData('pressure');
+    await fetchTemperatureData();
+    await fetchPressureData();
 
-    if (!mounted) return;
-    
-    setState(() {
-      temperatureData = tempData;
-      pressureData = pressData;
-      isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> fetchTemperatureData() async {
+    if (!hasMoreTemperatureData) return;
+
+    var result = await DatabaseHelper().fetchDataWithPagination(
+      'temperature',
+      documentLimit,
+      lastTemperatureDocument,
+    );
+
+    if (result.isNotEmpty) {
+      lastTemperatureDocument = result.last['document'];
+      setState(() {
+        temperatureData.addAll(result);
+        if (result.length < documentLimit) {
+          hasMoreTemperatureData = false;
+        }
+      });
+    } else {
+      if (mounted) {
+        setState(() {
+          hasMoreTemperatureData = false;
+        });
+      }
+    }
+  }
+
+  Future<void> fetchPressureData() async {
+    if (!hasMorePressureData) return;
+
+    var result = await DatabaseHelper().fetchDataWithPagination(
+      'pressure',
+      documentLimit,
+      lastPressureDocument,
+    );
+
+    if (result.isNotEmpty) {
+      lastPressureDocument = result.last['document'];
+      setState(() {
+        pressureData.addAll(result);
+        if (result.length < documentLimit) {
+          hasMorePressureData = false;
+        }
+      });
+    } else {
+      if (mounted) {
+        setState(() {
+          hasMorePressureData = false;
+        });
+      }
+    }
   }
 
   String formatTimestamp(DateTime timestamp) {
@@ -121,10 +175,17 @@ class _HistoryPageState extends State<HistoryPage> {
                             style: TextStyle(fontSize: 20)),
                         Expanded(
                           child: ListView.builder(
-                            itemCount: temperatureData.length,
+                            itemCount: temperatureData.length +
+                                (hasMoreTemperatureData ? 1 : 0),
                             itemBuilder: (context, index) {
+                              if (index == temperatureData.length) {
+                                fetchTemperatureData();
+                                return const Center(
+                                    child: CircularProgressIndicator());
+                              }
                               return ListTile(
-                                title: Text('${temperatureData[index]['value']} °C'),
+                                title: Text(
+                                    '${temperatureData[index]['value']} °C'),
                                 subtitle: Text(formatTimestamp(
                                     temperatureData[index]['timestamp'])),
                               );
@@ -132,13 +193,21 @@ class _HistoryPageState extends State<HistoryPage> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        const Text('Pressure Data', style: TextStyle(fontSize: 20)),
+                        const Text('Pressure Data',
+                            style: TextStyle(fontSize: 20)),
                         Expanded(
                           child: ListView.builder(
-                            itemCount: pressureData.length,
+                            itemCount: pressureData.length +
+                                (hasMorePressureData ? 1 : 0),
                             itemBuilder: (context, index) {
+                              if (index == pressureData.length) {
+                                fetchPressureData();
+                                return const Center(
+                                    child: CircularProgressIndicator());
+                              }
                               return ListTile(
-                                title: Text('${pressureData[index]['value']} Pa'),
+                                title:
+                                    Text('${pressureData[index]['value']} Pa'),
                                 subtitle: Text(formatTimestamp(
                                     pressureData[index]['timestamp'])),
                               );
@@ -168,7 +237,8 @@ class _HistoryPageState extends State<HistoryPage> {
                                 bottomTitles: AxisTitles(
                                   sideTitles: SideTitles(
                                     showTitles: true,
-                                    getTitlesWidget: (double value, TitleMeta meta) {
+                                    getTitlesWidget:
+                                        (double value, TitleMeta meta) {
                                       String date = DateFormat('MM-dd').format(
                                           DateTime.fromMillisecondsSinceEpoch(
                                               value.toInt()));
@@ -184,7 +254,8 @@ class _HistoryPageState extends State<HistoryPage> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        const Text('Pressure Data', style: TextStyle(fontSize: 20)),
+                        const Text('Pressure Data',
+                            style: TextStyle(fontSize: 20)),
                         Expanded(
                           child: BarChart(
                             BarChartData(
@@ -198,7 +269,8 @@ class _HistoryPageState extends State<HistoryPage> {
                                 bottomTitles: AxisTitles(
                                   sideTitles: SideTitles(
                                     showTitles: true,
-                                    getTitlesWidget: (double value, TitleMeta meta) {
+                                    getTitlesWidget:
+                                        (double value, TitleMeta meta) {
                                       String date = DateFormat('MM-dd').format(
                                           DateTime.fromMillisecondsSinceEpoch(
                                               value.toInt()));
@@ -222,4 +294,3 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 }
-

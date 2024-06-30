@@ -15,21 +15,28 @@ class DatabaseHelper {
     });
   }
 
-  Future<List<Map<String, dynamic>>> fetchData(String type) async {
-    QuerySnapshot querySnapshot = await _firestore
-        .collection(type)
-        .orderBy('timestamp', descending: true)
-        .get();
+  Future<List<Map<String, dynamic>>> fetchDataWithPagination(
+    String type,
+    int limit,
+    DocumentSnapshot? startAfter,
+  ) async {
+    Query query = _firestore.collection(type).orderBy('timestamp', descending: true).limit(limit);
+
+    if (startAfter != null) {
+      query = query.startAfterDocument(startAfter);
+    }
+
+    QuerySnapshot querySnapshot = await query.get();
 
     return querySnapshot.docs.map((doc) {
       var timestamp = doc['timestamp'];
       return {
         'id': doc.id,
         'value': doc['value'],
-        'timestamp': timestamp != null
-            ? (doc['timestamp'] as Timestamp).toDate()
-            : DateTime.now(),
+        'timestamp': timestamp != null ? (doc['timestamp'] as Timestamp).toDate() : DateTime.now(),
+        'document': doc,
       };
     }).toList();
   }
 }
+
